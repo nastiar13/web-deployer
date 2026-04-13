@@ -5,6 +5,7 @@ require_once __DIR__ . '/../src/Database.php';
 require_once __DIR__ . '/../src/Auth.php';
 require_once __DIR__ . '/../src/Project.php';
 require_once __DIR__ . '/../src/Nginx.php';
+require_once __DIR__ . '/../src/Traefik.php';
 require_once __DIR__ . '/../src/Deployer.php';
 
 use Deployer\Auth;

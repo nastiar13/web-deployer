@@ -19,6 +19,9 @@ class Nginx {
                 . "}\n";
         
         $availablePath = NGINX_AVAILABLE_DIR . '/' . $projectName;
+        if (!is_dir(NGINX_AVAILABLE_DIR)) {
+            @mkdir(NGINX_AVAILABLE_DIR, 0755, true);
+        }
         file_put_contents($availablePath, $config);
 
         $enabledPath = NGINX_ENABLED_DIR . '/' . $projectName;
