@@ -1,0 +1,20 @@
+# Environment & OS
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Dependencies
+vendor/
+node_modules/
+
+# Application Data & Overrides
+data/database.sqlite
+sites/
+mock_nginx/
+mock_traefik/
+traefik-dynamic/
+
+# IDE Configuration
+.idea/
+.vscode/

@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  app:
+    build: .
+    container_name: web-deployer-app
+    restart: unless-stopped
+    environment:
+      - DOCKER_ENV=true
+    volumes:
+      - ./data:/var/www/app/data
+      - ./sites:/var/www/sites
+      - /opt/traefik/dynamic:/etc/traefik/dynamic
+    networks:
+      - traefik-proxy
+
+networks:
+  traefik-proxy:
+    external: true
