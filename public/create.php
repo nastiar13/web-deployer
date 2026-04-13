@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             \Deployer\Deployer::deployNewProject($name, $domain, $zipFile, $gitRepo, $rootDir, $folderFiles);
             $success = 'Project deployed successfully!';
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $error = $e->getMessage();
         }
     }
