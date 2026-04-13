@@ -7,6 +7,13 @@ services:
     restart: unless-stopped
     environment:
       - DOCKER_ENV=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.deployer.rule=Host(`deploy.mitrabisnisdigital.com`)" # Change this to yours
+      - "traefik.http.routers.deployer.entrypoints=websecure"
+      - "traefik.http.routers.deployer.tls.certresolver=myresolver"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.services.deployer.loadbalancer.server.port=80"
     volumes:
       - ./data:/var/www/app/data
       - ./sites:/var/www/sites
