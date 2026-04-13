@@ -5,7 +5,7 @@ RUN apk add --no-cache nginx git zip unzip sqlite sudo shadow
 
 # Give www-data proper permissions for the OS
 RUN usermod -u 1000 www-data && \
-    mkdir -p /var/www/app /var/www/sites /etc/nginx/sites-enabled /etc/traefik/dynamic /var/lib/nginx && \
+    mkdir -p /var/www/app /var/www/sites /etc/nginx/sites-available /etc/nginx/sites-enabled /etc/traefik/dynamic /var/lib/nginx && \
     chown -R www-data:www-data /var/www /etc/nginx /etc/traefik/dynamic /var/lib/nginx
 
 # Allow PHP (www-data) to reload Nginx natively without password

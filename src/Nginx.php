@@ -25,14 +25,21 @@ class Nginx {
         file_put_contents($availablePath, $config);
 
         $enabledPath = NGINX_ENABLED_DIR . '/' . $projectName;
+        if (!is_dir(NGINX_ENABLED_DIR)) {
+            @mkdir(NGINX_ENABLED_DIR, 0755, true);
+        }
         if (IS_LOCAL_DEV) {
-            // Windows mock symlink: we must overwrite it fully each time
+            // Windows mock: direct copy
             copy($availablePath, $enabledPath);
+        } elseif (IS_DOCKER) {
+            // Docker: write directly to sites-enabled (no symlink needed)
+            file_put_contents($enabledPath, $config);
         } else {
-            // Linux native symlink: only needs to be created once
-            if (!file_exists($enabledPath)) {
-                shell_exec(CMD_LN . " -s " . escapeshellarg($availablePath) . " " . escapeshellarg($enabledPath));
+            // Linux native: symlink, remove stale first
+            if (is_link($enabledPath) || file_exists($enabledPath)) {
+                unlink($enabledPath);
             }
+            shell_exec(CMD_LN . " -s " . escapeshellarg($availablePath) . " " . escapeshellarg($enabledPath));
         }
     }
 
