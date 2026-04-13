@@ -12,6 +12,15 @@ RUN usermod -u 1000 www-data && \
 RUN echo "www-data ALL=(ALL) NOPASSWD: /usr/sbin/nginx -s reload" >> /etc/sudoers
 RUN echo "www-data ALL=(ALL) NOPASSWD: /bin/rm" >> /etc/sudoers
 
+# Force PHP-FPM to log all fatals and outputs directly to the Docker console
+RUN { \
+        echo 'catch_workers_output = yes'; \
+        echo 'decorate_workers_output = no'; \
+        echo 'php_admin_value[error_log] = /proc/self/fd/2'; \
+        echo 'php_admin_flag[log_errors] = on'; \
+        echo 'php_admin_flag[display_errors] = on'; \
+    } >> /usr/local/etc/php-fpm.d/www.conf
+
 # Copy Nginx Configuration
 COPY ./docker/nginx.conf /etc/nginx/nginx.conf
 
