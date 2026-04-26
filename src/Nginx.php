@@ -25,7 +25,7 @@ class Nginx
             $proxyUrl = rtrim($apiProxyUrl, '/');
             $config .= "\n"
                 . "    location /api/ {\n"
-                . "        proxy_pass {$proxyUrl}/;\n"
+                . "        proxy_pass {$proxyUrl};\n"
                 . "        proxy_set_header Host \$host;\n"
                 . "        proxy_set_header X-Real-IP \$remote_addr;\n"
                 . "        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n"
