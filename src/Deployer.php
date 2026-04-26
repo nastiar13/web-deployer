@@ -101,7 +101,7 @@ class Deployer {
         Traefik::generateConfig($cleanName, $newDomain);
         Nginx::reload();
 
-        Project::update($id, $cleanName, $newDomain, $newFolderPath, $sslEnabled, $gitRepo, $rootDir, $apiProxyUrl);
+        Project::update($id, $cleanName, $newDomain, $newFolderPath, $sslEnabled, $gitRepo, $rootDir, $apiProxyUrl, $projectType);
 
         // Run Certbot if freshly activated (mock)
         if ($sslEnabled && !$project['ssl_enabled']) {
