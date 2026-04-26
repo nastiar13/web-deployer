@@ -2,22 +2,32 @@
 // src/Nginx.php
 namespace Deployer;
 
-class Nginx {
-    public static function generateConfig(string $projectName, string $domain, string $folderPath, string $rootDir = '/'): void {
+class Nginx
+{
+    public static function generateConfig(string $projectName, string $domain, string $folderPath, string $rootDir = '/'): void
+    {
         // Nginx expects forward slashes, even on Windows
         $normalizedPath = str_replace('\\', '/', $folderPath);
         $finalRoot = $normalizedPath . ($rootDir === '/' ? '' : '/' . trim($rootDir, '/'));
-        
+
         $config = "server {\n"
-                . "    listen 80;\n"
-                . "    server_name {$domain};\n\n"
-                . "    root {$finalRoot};\n"
-                . "    index index.html;\n\n"
-                . "    location / {\n"
-                . "        try_files \$uri \$uri.html \$uri/ =404;\n"
-                . "    }\n"
-                . "}\n";
-        
+            . "    listen 80;\n"
+            . "    server_name {$domain};\n\n"
+            . "    root {$finalRoot};\n"
+            . "    index index.html index.php;\n\n"
+            . "    location / {\n"
+            . "        try_files \$uri \$uri.html \$uri/ /index.html;\n"
+            . "    }\n\n"
+            . "    location /api/ {\n"
+            . "        try_files \$uri \$uri/ /api/index.php?\$query_string;\n"
+            . "    }\n\n"
+            . "    location ~ \.php\$ {\n"
+            . "        fastcgi_pass 127.0.0.1:9000;\n"
+            . "        include fastcgi_params;\n"
+            . "        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;\n"
+            . "    }\n"
+            . "}\n";
+
         $availablePath = NGINX_AVAILABLE_DIR . '/' . $projectName;
         if (!is_dir(NGINX_AVAILABLE_DIR)) {
             @mkdir(NGINX_AVAILABLE_DIR, 0755, true);
@@ -31,10 +41,12 @@ class Nginx {
         if (IS_LOCAL_DEV) {
             // Windows mock: direct copy
             copy($availablePath, $enabledPath);
-        } elseif (IS_DOCKER) {
+        }
+        elseif (IS_DOCKER) {
             // Docker: write directly to sites-enabled (no symlink needed)
             file_put_contents($enabledPath, $config);
-        } else {
+        }
+        else {
             // Linux native: symlink, remove stale first
             if (is_link($enabledPath) || file_exists($enabledPath)) {
                 unlink($enabledPath);
@@ -43,11 +55,13 @@ class Nginx {
         }
     }
 
-    public static function reload(): void {
+    public static function reload(): void
+    {
         shell_exec(CMD_NGINX_RELOAD);
     }
 
-    public static function removeConfig(string $projectName): void {
+    public static function removeConfig(string $projectName): void
+    {
         $availablePath = NGINX_AVAILABLE_DIR . '/' . $projectName;
         $enabledPath = NGINX_ENABLED_DIR . '/' . $projectName;
         if (file_exists($enabledPath)) {
