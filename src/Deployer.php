@@ -22,8 +22,8 @@ class Deployer {
                 // Let git create the directory natively
                 $cmd = "git clone " . escapeshellarg($gitRepo) . " " . escapeshellarg($folderPath) . " 2>&1";
                 $output = shell_exec($cmd);
-                if (!is_dir($folderPath . '/.git') && strpos($output, 'fatal') !== false) {
-                    throw new Exception("Git clone failed: " . $output);
+                if (!is_dir($folderPath . '/.git')) {
+                    throw new Exception("Git clone failed: " . ($output ?: 'No output / Git not installed.'));
                 }
             } else if ($filesArray && isset($filesArray['tmp_name']) && !empty($filesArray['tmp_name'])) {
                 if (!mkdir($folderPath, 0755, true)) throw new Exception("Failed to create project directory.");
@@ -121,7 +121,7 @@ class Deployer {
     }
 
     private static function buildVite(string $folderPath): string {
-        if (!is_dir($folderPath . '/package.json')) {
+        if (!file_exists($folderPath . '/package.json')) {
             return "Skipped build: package.json not found.";
         }
         // Ensure npm install has enough permissions
