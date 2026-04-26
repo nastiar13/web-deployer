@@ -16,9 +16,25 @@ class Nginx
             . "    root {$finalRoot};\n"
             . "    index index.html;\n\n"
             . "    location / {\n"
-            . "        try_files \$uri \$uri.html \$uri/ =404;\n"
-            . "    }\n"
-            . "}\n";
+            . "        try_files \$uri \$uri.html \$uri/ /index.html;\n"
+            . "    }\n";
+
+        // When rootDir points to a subdirectory (e.g. dist for a Vite build),
+        // expose /api/ from the project root so a PHP backend can live alongside.
+        if ($rootDir !== '/') {
+            $config .= "\n"
+                . "    location /api/ {\n"
+                . "        alias {$normalizedPath}/api/;\n"
+                . "        try_files \$uri \$uri/ /api/index.php?\$query_string;\n"
+                . "        location ~ \\.php\$ {\n"
+                . "            fastcgi_pass 127.0.0.1:9000;\n"
+                . "            include fastcgi_params;\n"
+                . "            fastcgi_param SCRIPT_FILENAME \$request_filename;\n"
+                . "        }\n"
+                . "    }\n";
+        }
+
+        $config .= "}\n";
 
         $availablePath = NGINX_AVAILABLE_DIR . '/' . $projectName;
         if (!is_dir(NGINX_AVAILABLE_DIR)) {
