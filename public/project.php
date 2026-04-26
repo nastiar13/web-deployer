@@ -55,9 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $newGit = $_POST['git_repo'] ?? '';
         $newRoot = $_POST['root_dir'] ?? '/';
         $newProxy = trim($_POST['api_proxy_url'] ?? '') ?: null;
+        $newType = $_POST['project_type'] ?? 'static';
         $newSsl = isset($_POST['ssl']);
         try {
-            \Deployer\Deployer::updateProject($project['id'], $newName, $newDomain, $newSsl, $newGit, $newRoot, $newProxy);
+            \Deployer\Deployer::updateProject($project['id'], $newName, $newDomain, $newSsl, $newGit, $newRoot, $newProxy, $newType);
             $project = Project::getById($project['id']);
             $success = "Project settings updated successfully.";
         } catch (\Exception $e) {
@@ -76,6 +77,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $success = "Git synced successfully: " . $syncMessage;
         } catch (\Exception $e) {
             $error = "Git Sync Error: " . $e->getMessage();
+        }
+    } else {
+        $error = "CSRF validation failed.";
+    }
+}
+
+// Handle Rebuild
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rebuild') {
+    if (Auth::validateCsrf($_POST['csrf_token'] ?? '')) {
+        try {
+            $buildMessage = \Deployer\Deployer::rebuildProject($project['id']);
+            $success = "Project rebuilt successfully.";
+            // $success = "Project rebuilt successfully: " . $buildMessage; // Too verbose for UI default
+        } catch (\Exception $e) {
+            $error = "Rebuild Error: " . $e->getMessage();
         }
     } else {
         $error = "CSRF validation failed.";
@@ -189,6 +205,13 @@ function getIcon($is_dir, $filename) {
                 </div>
             </div>
             <div style="display:flex; gap: 8px; height: fit-content;">
+                <?php if (isset($project['project_type']) && $project['project_type'] === 'vite'): ?>
+                <form method="POST" style="margin: 0;">
+                    <input type="hidden" name="action" value="rebuild">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(Auth::generateCsrf()) ?>">
+                    <button type="submit" class="btn secondary-btn" style="border-color: #f59e0b; color: #fcd34d;">Rebuild Vite</button>
+                </form>
+                <?php endif; ?>
                 <?php if (!empty($project['git_repo'])): ?>
                 <form method="POST" style="margin: 0;">
                     <input type="hidden" name="action" value="sync_git">
@@ -230,12 +253,19 @@ function getIcon($is_dir, $filename) {
                     <input type="url" name="git_repo" value="<?= htmlspecialchars($project['git_repo'] ?? '') ?>" placeholder="https://github.com/...">
                 </div>
                 <div class="form-group" style="margin-bottom: 0px; flex: 1; min-width: 150px;">
-                    <label>Publish Directory</label>
-                    <input type="text" name="root_dir" value="<?= htmlspecialchars($project['root_dir'] ?? '/') ?>" placeholder="e.g. /dist">
+                    <label>Project Type</label>
+                    <select name="project_type" id="project_type" onchange="toggleProjectType()" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.4); color: white;">
+                        <option value="static" <?= ($project['project_type'] ?? 'static') === 'static' ? 'selected' : '' ?>>Static Site</option>
+                        <option value="vite" <?= ($project['project_type'] ?? 'static') === 'vite' ? 'selected' : '' ?>>Vite App</option>
+                    </select>
                 </div>
-                <div class="form-group" style="margin-bottom: 0px; flex: 1; min-width: 200px;">
+                <div class="form-group" style="margin-bottom: 0px; flex: 1; min-width: 150px;">
+                    <label>Publish Directory</label>
+                    <input type="text" name="root_dir" id="root_dir" value="<?= htmlspecialchars($project['root_dir'] ?? '/') ?>" placeholder="e.g. /dist">
+                </div>
+                <div class="form-group" id="group_api_proxy" style="margin-bottom: 0px; flex: 1; min-width: 200px; <?= ($project['project_type'] ?? 'static') === 'static' ? 'display:none;' : '' ?>">
                     <label>API Proxy URL</label>
-                    <input type="url" name="api_proxy_url" value="<?= htmlspecialchars($project['api_proxy_url'] ?? '') ?>" placeholder="e.g. http://api.example.com">
+                    <input type="url" name="api_proxy_url" id="api_proxy_url" value="<?= htmlspecialchars($project['api_proxy_url'] ?? '') ?>" placeholder="e.g. http://api.example.com">
                 </div>
                 <div class="form-group" style="margin-bottom: 0px; display:flex; align-items: center; gap: 8px; flex: 0.5; min-width: 120px; padding-bottom: 12px;">
                     <input type="checkbox" name="ssl" value="1" <?= $project['ssl_enabled'] ? 'checked' : '' ?> id="ssl_config" style="width:auto;">
@@ -390,6 +420,18 @@ function getIcon($is_dir, $filename) {
             alert('Upload error');
             document.getElementById('upload-progress').style.display = 'none';
         });
+    }
+
+    function toggleProjectType() {
+        const type = document.getElementById('project_type').value;
+        const rootDir = document.getElementById('root_dir');
+        const apiGroup = document.getElementById('group_api_proxy');
+        if (type === 'vite') {
+            if (rootDir.value === '/') rootDir.value = 'dist';
+            apiGroup.style.display = 'block';
+        } else {
+            apiGroup.style.display = 'none';
+        }
     }
     </script>
 </body>

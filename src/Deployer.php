@@ -4,7 +4,7 @@ namespace Deployer;
 use Exception;
 
 class Deployer {
-    public static function deployNewProject(string $projectName, string $domain, ?array $filesArray = null, ?string $gitRepo = null, string $rootDir = '/', ?array $folderFiles = null, ?string $apiProxyUrl = null): int {
+    public static function deployNewProject(string $projectName, string $domain, ?array $filesArray = null, ?string $gitRepo = null, string $rootDir = '/', ?array $folderFiles = null, ?string $apiProxyUrl = null, string $projectType = 'static'): int {
         $cleanName = Uploader::sanitizeProjectName($projectName);
         if (empty($cleanName)) {
             throw new Exception("Invalid project name.");
@@ -39,11 +39,16 @@ class Deployer {
                 if (!mkdir($folderPath, 0755, true)) throw new Exception("Failed to create project directory.");
             }
 
+            if ($projectType === 'vite') {
+                if ($rootDir === '/') $rootDir = 'dist';
+                self::buildVite($folderPath);
+            }
+
             Nginx::generateConfig($cleanName, $domain, $folderPath, $rootDir, $apiProxyUrl);
             Traefik::generateConfig($cleanName, $domain);
             Nginx::reload();
 
-            return Project::create($cleanName, $domain, $folderPath, $gitRepo, $rootDir, $apiProxyUrl);
+            return Project::create($cleanName, $domain, $folderPath, $gitRepo, $rootDir, $apiProxyUrl, $projectType);
         } catch (\Exception $e) {
             // Cleanup on failure
             self::recursiveRemoveDirectory($folderPath);
@@ -63,7 +68,7 @@ class Deployer {
         }
     }
 
-    public static function updateProject(int $id, string $newName, string $newDomain, bool $sslEnabled, ?string $gitRepo = null, string $rootDir = '/', ?string $apiProxyUrl = null): void {
+    public static function updateProject(int $id, string $newName, string $newDomain, bool $sslEnabled, ?string $gitRepo = null, string $rootDir = '/', ?string $apiProxyUrl = null, string $projectType = 'static'): void {
         $project = Project::getById($id);
         if (!$project) {
             throw new Exception("Project not found.");
@@ -102,6 +107,28 @@ class Deployer {
         if ($sslEnabled && !$project['ssl_enabled']) {
             Certbot::run($newDomain);
         }
+    }
+
+    public static function rebuildProject(int $id): string {
+        $project = Project::getById($id);
+        if (!$project) {
+            throw new Exception("Project not found.");
+        }
+        if ($project['project_type'] !== 'vite') {
+            throw new Exception("Only Vite projects can be rebuilt.");
+        }
+        return self::buildVite($project['folder_path']);
+    }
+
+    private static function buildVite(string $folderPath): string {
+        if (!is_dir($folderPath . '/package.json')) {
+            return "Skipped build: package.json not found.";
+        }
+        // Ensure npm install has enough permissions
+        $cmd = "cd " . escapeshellarg($folderPath) . " && npm install 2>&1 && npm run build 2>&1";
+        $out = shell_exec($cmd);
+        file_put_contents($folderPath . '/.deployer_build.log', $out);
+        return $out ?: "Build executed with no output.";
     }
 
     public static function syncGit(int $id): string {

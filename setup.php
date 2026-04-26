@@ -34,6 +34,7 @@ $db->exec("
         git_repo TEXT DEFAULT NULL,
         root_dir TEXT DEFAULT '/',
         api_proxy_url TEXT DEFAULT NULL,
+        project_type TEXT DEFAULT 'static',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 ");
@@ -66,6 +67,13 @@ echo "Setup completed successfully.\n";
 // Migrate existing databases: add api_proxy_url if missing
 try {
     $db->exec("ALTER TABLE projects ADD COLUMN api_proxy_url TEXT DEFAULT NULL");
+} catch (\Exception $e) {
+    // Column already exists, safe to ignore
+}
+
+// Migrate existing databases: add project_type if missing
+try {
+    $db->exec("ALTER TABLE projects ADD COLUMN project_type TEXT DEFAULT 'static'");
 } catch (\Exception $e) {
     // Column already exists, safe to ignore
 }

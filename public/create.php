@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gitRepo = $_POST['git_repo'] ?? '';
     $rootDir = $_POST['root_dir'] ?? '/';
     $apiProxyUrl = trim($_POST['api_proxy_url'] ?? '') ?: null;
+    $projectType = $_POST['project_type'] ?? 'static';
     $enableSsl = isset($_POST['ssl']);
     $csrf = $_POST['csrf_token'] ?? '';
     
@@ -44,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Project Name and Domain are required.';
     } else {
         try {
-            \Deployer\Deployer::deployNewProject($name, $domain, $zipFile, $gitRepo, $rootDir, $folderFiles, $apiProxyUrl);
+            \Deployer\Deployer::deployNewProject($name, $domain, $zipFile, $gitRepo, $rootDir, $folderFiles, $apiProxyUrl, $projectType);
             $success = 'Project deployed successfully!';
         } catch (\Throwable $e) {
             $error = $e->getMessage();
@@ -99,6 +100,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" id="domain" name="domain" required placeholder="e.g. portfolio.example.com">
                 </div>
                 <div class="form-group">
+                    <label>Project Type</label>
+                    <div style="display: flex; gap: 16px; margin-top: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; margin: 0;">
+                            <input type="radio" name="project_type" value="static" checked onchange="toggleProjectType()" style="width: auto;"> Static Site
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; margin: 0;">
+                            <input type="radio" name="project_type" value="vite" onchange="toggleProjectType()" style="width: auto;"> Vite App (React/Vue/etc)
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>Deployment Method (Optional)</label>
                     <select id="deploy_method" onchange="toggleDeployMethod()" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.4); color: white; display: block;">
                         <option value="none">Empty Workspace (Configure later)</option>
@@ -130,6 +142,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     document.getElementById('method_folder').style.display = method === 'folder' ? 'block' : 'none';
                     document.getElementById('method_git').style.display = method === 'git' ? 'block' : 'none';
                 }
+                function toggleProjectType() {
+                    const type = document.querySelector('input[name="project_type"]:checked').value;
+                    const rootDir = document.getElementById('root_dir');
+                    const apiGroup = document.getElementById('group_api_proxy');
+                    if (type === 'vite') {
+                        rootDir.value = 'dist';
+                        apiGroup.style.display = 'block';
+                    } else {
+                        rootDir.value = '/';
+                        apiGroup.style.display = 'none';
+                    }
+                }
                 </script>
 
                 <div class="form-group" style="padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
@@ -137,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" id="root_dir" name="root_dir" placeholder="e.g. /dist" value="/">
                     <small style="color:var(--text-muted); display:block; margin-top:4px;">If your index.html is located in a subfolder like /build or /dist.</small>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="group_api_proxy" style="display: none;">
                     <label for="api_proxy_url">API Proxy URL (Optional)</label>
                     <input type="url" id="api_proxy_url" name="api_proxy_url" placeholder="e.g. http://api.example.com">
                     <small style="color:var(--text-muted); display:block; margin-top:4px;">Nginx will forward all <code>/api/</code> requests to this URL. Mirrors Vite&rsquo;s <code>server.proxy</code> in production.</small>

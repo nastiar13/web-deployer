@@ -1,7 +1,7 @@
 FROM php:8.2-fpm-alpine
 
-# Install Nginx, Git, Zip, Sqlite, and Sudo
-RUN apk add --no-cache nginx git zip unzip sqlite sudo shadow
+# Install Nginx, Git, Zip, Sqlite, Node.js, and Sudo
+RUN apk add --no-cache nginx git zip unzip sqlite sudo shadow nodejs npm
 
 # Give www-data proper permissions for the OS
 RUN usermod -u 1000 www-data && \
