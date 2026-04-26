@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $domain = $_POST['domain'] ?? '';
     $gitRepo = $_POST['git_repo'] ?? '';
     $rootDir = $_POST['root_dir'] ?? '/';
+    $apiProxyUrl = trim($_POST['api_proxy_url'] ?? '') ?: null;
     $enableSsl = isset($_POST['ssl']);
     $csrf = $_POST['csrf_token'] ?? '';
     
@@ -43,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Project Name and Domain are required.';
     } else {
         try {
-            \Deployer\Deployer::deployNewProject($name, $domain, $zipFile, $gitRepo, $rootDir, $folderFiles);
+            \Deployer\Deployer::deployNewProject($name, $domain, $zipFile, $gitRepo, $rootDir, $folderFiles, $apiProxyUrl);
             $success = 'Project deployed successfully!';
         } catch (\Throwable $e) {
             $error = $e->getMessage();
@@ -135,6 +136,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="root_dir">Publish Directory</label>
                     <input type="text" id="root_dir" name="root_dir" placeholder="e.g. /dist" value="/">
                     <small style="color:var(--text-muted); display:block; margin-top:4px;">If your index.html is located in a subfolder like /build or /dist.</small>
+                </div>
+                <div class="form-group">
+                    <label for="api_proxy_url">API Proxy URL (Optional)</label>
+                    <input type="url" id="api_proxy_url" name="api_proxy_url" placeholder="e.g. http://api.example.com">
+                    <small style="color:var(--text-muted); display:block; margin-top:4px;">Nginx will forward all <code>/api/</code> requests to this URL. Mirrors Vite&rsquo;s <code>server.proxy</code> in production.</small>
                 </div>
                 <!-- Not implementing real async SSL for this static test but here's the UI option -->
                 <div class="form-group" style="display: flex; align-items: center; gap: 10px;">

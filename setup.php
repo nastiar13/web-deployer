@@ -33,6 +33,7 @@ $db->exec("
         ssl_enabled INTEGER DEFAULT 0,
         git_repo TEXT DEFAULT NULL,
         root_dir TEXT DEFAULT '/',
+        api_proxy_url TEXT DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 ");
@@ -61,3 +62,10 @@ if ($count == 0) {
 }
 
 echo "Setup completed successfully.\n";
+
+// Migrate existing databases: add api_proxy_url if missing
+try {
+    $db->exec("ALTER TABLE projects ADD COLUMN api_proxy_url TEXT DEFAULT NULL");
+} catch (\Exception $e) {
+    // Column already exists, safe to ignore
+}

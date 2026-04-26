@@ -4,7 +4,7 @@ namespace Deployer;
 
 class Nginx
 {
-    public static function generateConfig(string $projectName, string $domain, string $folderPath, string $rootDir = '/'): void
+    public static function generateConfig(string $projectName, string $domain, string $folderPath, string $rootDir = '/', ?string $apiProxyUrl = null): void
     {
         // Nginx expects forward slashes, even on Windows
         $normalizedPath = str_replace('\\', '/', $folderPath);
@@ -19,18 +19,17 @@ class Nginx
             . "        try_files \$uri \$uri.html \$uri/ /index.html;\n"
             . "    }\n";
 
-        // When rootDir points to a subdirectory (e.g. dist for a Vite build),
-        // expose /api/ from the project root so a PHP backend can live alongside.
-        if ($rootDir !== '/') {
+        // Proxy /api/ to an external backend — mirrors Vite's server.proxy config.
+        // Set api_proxy_url on the project to enable, e.g. http://api.example.com
+        if (!empty($apiProxyUrl)) {
+            $proxyUrl = rtrim($apiProxyUrl, '/');
             $config .= "\n"
                 . "    location /api/ {\n"
-                . "        alias {$normalizedPath}/api/;\n"
-                . "        try_files \$uri \$uri/ /api/index.php?\$query_string;\n"
-                . "        location ~ \\.php\$ {\n"
-                . "            fastcgi_pass 127.0.0.1:9000;\n"
-                . "            include fastcgi_params;\n"
-                . "            fastcgi_param SCRIPT_FILENAME \$request_filename;\n"
-                . "        }\n"
+                . "        proxy_pass {$proxyUrl}/;\n"
+                . "        proxy_set_header Host \$host;\n"
+                . "        proxy_set_header X-Real-IP \$remote_addr;\n"
+                . "        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n"
+                . "        proxy_set_header X-Forwarded-Proto \$scheme;\n"
                 . "    }\n";
         }
 

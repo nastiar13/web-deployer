@@ -24,9 +24,10 @@ foreach ($projects as $project) {
     $domain     = $project['domain'];
     $folderPath = $project['folder_path'];
     $rootDir    = $project['root_dir'] ?? '/';
+    $apiProxy   = $project['api_proxy_url'] ?? null;
 
     echo "Regenerating config for: {$name} ({$domain})\n";
-    Nginx::generateConfig($name, $domain, $folderPath, $rootDir);
+    Nginx::generateConfig($name, $domain, $folderPath, $rootDir, $apiProxy);
     Traefik::generateConfig($name, $domain);
 }
 

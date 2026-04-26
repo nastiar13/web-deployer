@@ -54,9 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $newDomain = $_POST['domain'] ?? '';
         $newGit = $_POST['git_repo'] ?? '';
         $newRoot = $_POST['root_dir'] ?? '/';
+        $newProxy = trim($_POST['api_proxy_url'] ?? '') ?: null;
         $newSsl = isset($_POST['ssl']);
         try {
-            \Deployer\Deployer::updateProject($project['id'], $newName, $newDomain, $newSsl, $newGit, $newRoot);
+            \Deployer\Deployer::updateProject($project['id'], $newName, $newDomain, $newSsl, $newGit, $newRoot, $newProxy);
             $project = Project::getById($project['id']);
             $success = "Project settings updated successfully.";
         } catch (\Exception $e) {
@@ -231,6 +232,10 @@ function getIcon($is_dir, $filename) {
                 <div class="form-group" style="margin-bottom: 0px; flex: 1; min-width: 150px;">
                     <label>Publish Directory</label>
                     <input type="text" name="root_dir" value="<?= htmlspecialchars($project['root_dir'] ?? '/') ?>" placeholder="e.g. /dist">
+                </div>
+                <div class="form-group" style="margin-bottom: 0px; flex: 1; min-width: 200px;">
+                    <label>API Proxy URL</label>
+                    <input type="url" name="api_proxy_url" value="<?= htmlspecialchars($project['api_proxy_url'] ?? '') ?>" placeholder="e.g. http://api.example.com">
                 </div>
                 <div class="form-group" style="margin-bottom: 0px; display:flex; align-items: center; gap: 8px; flex: 0.5; min-width: 120px; padding-bottom: 12px;">
                     <input type="checkbox" name="ssl" value="1" <?= $project['ssl_enabled'] ? 'checked' : '' ?> id="ssl_config" style="width:auto;">

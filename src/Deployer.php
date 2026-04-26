@@ -4,7 +4,7 @@ namespace Deployer;
 use Exception;
 
 class Deployer {
-    public static function deployNewProject(string $projectName, string $domain, ?array $filesArray = null, ?string $gitRepo = null, string $rootDir = '/', ?array $folderFiles = null): int {
+    public static function deployNewProject(string $projectName, string $domain, ?array $filesArray = null, ?string $gitRepo = null, string $rootDir = '/', ?array $folderFiles = null, ?string $apiProxyUrl = null): int {
         $cleanName = Uploader::sanitizeProjectName($projectName);
         if (empty($cleanName)) {
             throw new Exception("Invalid project name.");
@@ -39,11 +39,11 @@ class Deployer {
                 if (!mkdir($folderPath, 0755, true)) throw new Exception("Failed to create project directory.");
             }
 
-            Nginx::generateConfig($cleanName, $domain, $folderPath, $rootDir);
+            Nginx::generateConfig($cleanName, $domain, $folderPath, $rootDir, $apiProxyUrl);
             Traefik::generateConfig($cleanName, $domain);
             Nginx::reload();
 
-            return Project::create($cleanName, $domain, $folderPath, $gitRepo, $rootDir);
+            return Project::create($cleanName, $domain, $folderPath, $gitRepo, $rootDir, $apiProxyUrl);
         } catch (\Exception $e) {
             // Cleanup on failure
             self::recursiveRemoveDirectory($folderPath);
@@ -63,7 +63,7 @@ class Deployer {
         }
     }
 
-    public static function updateProject(int $id, string $newName, string $newDomain, bool $sslEnabled, ?string $gitRepo = null, string $rootDir = '/'): void {
+    public static function updateProject(int $id, string $newName, string $newDomain, bool $sslEnabled, ?string $gitRepo = null, string $rootDir = '/', ?string $apiProxyUrl = null): void {
         $project = Project::getById($id);
         if (!$project) {
             throw new Exception("Project not found.");
@@ -92,11 +92,11 @@ class Deployer {
         }
 
         // Regenerate config for domain changes or new name
-        Nginx::generateConfig($cleanName, $newDomain, $newFolderPath, $rootDir);
+        Nginx::generateConfig($cleanName, $newDomain, $newFolderPath, $rootDir, $apiProxyUrl);
         Traefik::generateConfig($cleanName, $newDomain);
         Nginx::reload();
 
-        Project::update($id, $cleanName, $newDomain, $newFolderPath, $sslEnabled, $gitRepo, $rootDir);
+        Project::update($id, $cleanName, $newDomain, $newFolderPath, $sslEnabled, $gitRepo, $rootDir, $apiProxyUrl);
 
         // Run Certbot if freshly activated (mock)
         if ($sslEnabled && !$project['ssl_enabled']) {
